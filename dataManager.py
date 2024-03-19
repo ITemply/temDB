@@ -1,11 +1,15 @@
 import os, sys, math, time, pathlib, json, random, string
 
 source = pathlib.Path(__file__).parent.absolute()
-collection = str(source) + r'\collection'
+collection = str(source) + '/collection'
 sys.path.insert(0, str(source) + '/modules')
 
 validChars = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM-_1234567890'
 validLetters = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM'
+
+# Data Management
+
+dataQueue = []
 
 def startUp():
     print('Database Started')
@@ -37,12 +41,13 @@ def deleteDatabase(databaseName):
     try:
         if databaseName == 'dataStream':
             return 'Unable To Delete Database'
-        if pathlib.Path.exists(str(collection) + '/' + databaseName + '.json'):
-            os.remove(str(collection) + '/' + databaseName + '.json')
+        if os.path.exists(str(collection) + '/' + str(databaseName) + '.json'):
+            os.remove(str(collection) + '/' + str(databaseName) + '.json')
             return 'Deleted Database'
         else:
             return 'Database Does Not Exist'
-    except Exception:
+    except Exception as e:
+        print(e)
         return 'Failed To Delete Database'
     
 # Tables
@@ -111,7 +116,7 @@ def createElement(databaseName, tableName, elementName, elementData):
                         return 'Element Name Taken'
                 except Exception:
                     None
-                databaseData[tableName]['tableData'][elementName] = {'elementId': hash, 'elementData': elementData}
+                databaseData[tableName]['tableData'][elementName] = {'elementName': elementName,'elementId': hash, 'elementData': elementData}
                 with open(str(collection) + '/' + databaseName + '.json', 'w') as databaseFileWrite:
                     databaseFileWrite.write(json.dumps(databaseData))
                     databaseFileWrite.close()
@@ -194,9 +199,87 @@ def getElement(databaseName, tableName, elementName):
                 return 'Element Not Found'
             databaseFileRead.close()
             return databaseData[tableName]['tableData'][elementName]
-            
     except Exception:
         return 'Failed To Delete Element'
+
+def getAllElements(databaseName, tableName):
+    for letter in databaseName:
+        if not letter in validChars:
+            return 'Invalid Database Name'
+    for letter in tableName:
+        if not letter in validChars:
+            return 'Invalid Table Name'
+    try:
+        with open(str(collection) + '/' + databaseName + '.json', 'r') as databaseFileRead:
+            databaseData = json.load(databaseFileRead)
+            try:
+                if databaseData[tableName]:
+                    None
+            except Exception:
+                databaseFileRead.close()
+                return 'Table Not Found'
+            databaseFileRead.close()
+            elementsList = []
+            for item in databaseData[tableName]['tableData']:
+                elementsList.append(databaseData[tableName]['tableData'][item])
+            return elementsList
+    except Exception:
+        return 'Failed To Get Elements'
+
+def getAllElementsThat(databaseName, tableName, identifier):
+    for letter in databaseName:
+        if not letter in validChars:
+            return 'Invalid Database Name'
+    for letter in tableName:
+        if not letter in validChars:
+            return 'Invalid Table Name'
+    try:
+        with open(str(collection) + '/' + databaseName + '.json', 'r') as databaseFileRead:
+            databaseData = json.load(databaseFileRead)
+            try:
+                if databaseData[tableName]:
+                    None
+            except Exception:
+                databaseFileRead.close()
+                return 'Table Not Found'
+            databaseFileRead.close()
+            elementsList = []
+            for item in databaseData[tableName]['tableData']:
+                if identifier in databaseData[tableName]['tableData'][item]['elementName']:
+                    elementsList.append(databaseData[tableName]['tableData'][item])
+            return elementsList
+    except Exception:
+        return 'Failed To Get Elements'
+
+# Execution
+
+def executeData(data):
+    functionType = data['function']
+    functionData = data['functionData']
+    if functionType == 'CREATE':
+        if functionData['createType'] == 'DB':
+            return createDatabase(functionData['name'])
+        elif functionData['createType'] == 'T':
+            return createTable(functionData['DB'], functionData['name'])
+        elif functionData['createType'] == 'E':
+            return createElement(functionData['DB'], functionData['T'], functionData['name'], functionData['EData'])
+    elif functionType == 'DELETE':
+        if functionData['deleteType'] == 'DB':
+            return deleteDatabase(functionData['name'])
+        elif functionData['deleteType'] == 'T':
+            return deleteTable(functionData['DB'], functionData['name'])
+        elif functionData['deleteType'] == 'E':
+            return deleteElement(functionData['DB'], functionData['T'], functionData['name'])
+    elif functionType == 'EDIT':
+        if functionData['editType'] == 'E':
+            return editElement(functionData['DB'], functionData['T'], functionData['name'], functionData['NewData'])
+    elif functionType == 'GET':
+        if functionData['getType'] == 'E':
+            return getElement(functionData['DB'], functionData['T'], functionData['name'])
+        elif functionData['getType'] == 'EAll':
+            return getAllElements(functionData['DB'], functionData['T'])
+        elif functionData['getType'] == 'EQuery':
+            return getAllElementsThat(functionData['DB'], functionData['T'], functionData['Query'])
 
 if __name__ == '__main__':
     startUp()
