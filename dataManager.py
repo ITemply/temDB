@@ -199,5 +199,4 @@ def getElement(databaseName, tableName, elementName):
         return 'Failed To Delete Element'
 
 if __name__ == '__main__':
-    deleteTable('dataStream', 'hello-world')
     startUp()
