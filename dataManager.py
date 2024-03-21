@@ -9,11 +9,6 @@ validLetters = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM'
 
 # Data Management
 
-dataQueue = []
-
-def startUp():
-    print('Database Started')
-
 def randomHash(length):
     pool = validLetters + string.digits
     return ''.join(random.choice(pool) for i in range(length))
@@ -56,7 +51,7 @@ def createTable(databaseName, tableName):
     for letter in tableName:
         if not letter in validChars:
             return 'Invalid Table Name'
-    #try:
+    try:
         hash = randomHash(35)
         with open(str(collection) + '/' + databaseName + '.json', 'r') as databaseFileRead:
             databaseData = json.load(databaseFileRead)
@@ -72,8 +67,7 @@ def createTable(databaseName, tableName):
                 databaseFileWrite.close()
                 databaseFileRead.close()
                 return 'Table Created'
-    #except Exception as e:
-        print(e)
+    except Exception:
         return 'Failed To Create Table'
     
 def deleteTable(databaseName, tableName):
@@ -280,6 +274,9 @@ def executeData(data):
             return getAllElements(functionData['DB'], functionData['T'])
         elif functionData['getType'] == 'EQuery':
             return getAllElementsThat(functionData['DB'], functionData['T'], functionData['Query'])
+
+def startUp():
+    print('started')
 
 if __name__ == '__main__':
     startUp()
