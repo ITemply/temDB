@@ -1,4 +1,7 @@
-import os, sys, math, time, pathlib, json, random, string
+import os, sys, math, time, pathlib, json, random, string, socketio, threading
+
+global authCode
+authCode = os.environ.get('API_KEY')
 
 source = pathlib.Path(__file__).parent.absolute()
 collection = str(source) + '/collection'
@@ -248,35 +251,79 @@ def getAllElementsThat(databaseName, tableName, identifier):
 # Execution
 
 def executeData(data):
+    global authCode
     functionType = data['function']
+    apiKey = data['apiKey']
     functionData = data['functionData']
-    if functionType == 'CREATE':
-        if functionData['createType'] == 'DB':
-            return createDatabase(functionData['name'])
-        elif functionData['createType'] == 'T':
-            return createTable(functionData['DB'], functionData['name'])
-        elif functionData['createType'] == 'E':
-            return createElement(functionData['DB'], functionData['T'], functionData['name'], functionData['EData'])
-    elif functionType == 'DELETE':
-        if functionData['deleteType'] == 'DB':
-            return deleteDatabase(functionData['name'])
-        elif functionData['deleteType'] == 'T':
-            return deleteTable(functionData['DB'], functionData['name'])
-        elif functionData['deleteType'] == 'E':
-            return deleteElement(functionData['DB'], functionData['T'], functionData['name'])
-    elif functionType == 'EDIT':
-        if functionData['editType'] == 'E':
-            return editElement(functionData['DB'], functionData['T'], functionData['name'], functionData['NewData'])
-    elif functionType == 'GET':
-        if functionData['getType'] == 'E':
-            return getElement(functionData['DB'], functionData['T'], functionData['name'])
-        elif functionData['getType'] == 'EAll':
-            return getAllElements(functionData['DB'], functionData['T'])
-        elif functionData['getType'] == 'EQuery':
-            return getAllElementsThat(functionData['DB'], functionData['T'], functionData['Query'])
+
+    if apiKey == authCode:
+        print(functionType, functionData)
+        if functionType == 'CREATE':
+            if functionData['createType'] == 'DB':
+                return createDatabase(functionData['DB'])
+            elif functionData['createType'] == 'T':
+                return createTable(functionData['DB'], functionData['T'])
+            elif functionData['createType'] == 'E':
+                return createElement(functionData['DB'], functionData['T'], functionData['E'], functionData['D'])
+        elif functionType == 'DELETE':
+            if functionData['deleteType'] == 'DB':
+                return deleteDatabase(functionData['DB'])
+            elif functionData['deleteType'] == 'T':
+                return deleteTable(functionData['DB'], functionData['T'])
+            elif functionData['deleteType'] == 'E':
+                return deleteElement(functionData['DB'], functionData['T'], functionData['E'])
+        elif functionType == 'EDIT':
+            if functionData['editType'] == 'E':
+                return editElement(functionData['DB'], functionData['T'], functionData['E'], functionData['D'])
+        elif functionType == 'GET':
+            if functionData['getType'] == 'E':
+                return getElement(functionData['DB'], functionData['T'], functionData['E'])
+            elif functionData['getType'] == 'EAll':
+                return getAllElements(functionData['DB'], functionData['T'])
+            elif functionData['getType'] == 'EQuery':
+                return getAllElementsThat(functionData['DB'], functionData['T'], functionData['Q'])
+
+def keepAliveThread():
+    while True:
+        None
+
+class returningThread(threading.Thread):
+  def __init__(self, *args, **kwargs):
+      super().__init__(*args, **kwargs)
+      self.result = None
+
+  def run(self):
+      if self._target is None:
+          return
+      try:
+          self.result = self._target(*self._args, **self._kwargs)
+      except Exception as exc:
+          print(f'{type(exc).__name__}: {exc}', file=sys.stderr) 
+
+  def join(self, *args, **kwargs):
+      super().join(*args, **kwargs)
+      return self.result
 
 def startUp():
-    print('started')
+    sio = socketio.Client(handle_sigint=True,reconnection=True)
+
+    @sio.event
+    def connect():
+        print('Connection Established')
+
+    @sio.event
+    def disconnect():
+        print('Client Dissconnected')
+
+    @sio.on('dataRequest')
+    def dataRequest(data):
+        returner = executeData({'hi': 'ho'})
+        sio.emit('sendingBack', returner)
+
+    thread = returningThread(target=keepAliveThread, args=())
+    thread.start()
+
+    sio.connect('https://cc3f3bc3-eb68-4b95-bc77-0d6a691f3a5f-00-12prjays5uigr.worf.replit.dev/', namespaces=['/'], transports=['websocket'])
 
 if __name__ == '__main__':
     startUp()
