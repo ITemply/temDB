@@ -317,7 +317,7 @@ def startUp():
 
     @sio.on('dataRequest')
     def dataRequest(data):
-        returner = executeData({'hi': 'ho'})
+        returner = executeData(json.loads(data))
         sio.emit('sendingBack', returner)
 
     thread = returningThread(target=keepAliveThread, args=())
