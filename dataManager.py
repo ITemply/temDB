@@ -257,7 +257,6 @@ def executeData(data):
     functionData = data['functionData']
 
     if apiKey == authCode:
-        print(functionType, functionData)
         if functionType == 'CREATE':
             if functionData['createType'] == 'DB':
                 return createDatabase(functionData['DB'])
