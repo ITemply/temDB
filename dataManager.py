@@ -255,32 +255,33 @@ def executeData(data):
     functionType = data['function']
     apiKey = data['apiKey']
     functionData = data['functionData']
+    id = data['id']
 
     if apiKey == authCode:
         if functionType == 'CREATE':
             if functionData['createType'] == 'DB':
-                return createDatabase(functionData['DB'])
+                return json.dumps({"id": id, "returning": createDatabase(functionData['DB'])})
             elif functionData['createType'] == 'T':
-                return createTable(functionData['DB'], functionData['T'])
+                return json.dumps({"id": id, "returning": createTable(functionData['DB'], functionData['T'])})
             elif functionData['createType'] == 'E':
-                return createElement(functionData['DB'], functionData['T'], functionData['E'], functionData['D'])
+                return json.dumps({"id": id, "returning": createElement(functionData['DB'], functionData['T'], functionData['E'], functionData['D'])})
         elif functionType == 'DELETE':
             if functionData['deleteType'] == 'DB':
-                return deleteDatabase(functionData['DB'])
+                return json.dumps({"id": id, "returning": deleteDatabase(functionData['DB'])})
             elif functionData['deleteType'] == 'T':
-                return deleteTable(functionData['DB'], functionData['T'])
+                return json.dumps({"id": id, "returning": deleteTable(functionData['DB'], functionData['T'])})
             elif functionData['deleteType'] == 'E':
-                return deleteElement(functionData['DB'], functionData['T'], functionData['E'])
+                return json.dumps({"id": id, "returning": deleteElement(functionData['DB'], functionData['T'], functionData['E'])})
         elif functionType == 'EDIT':
             if functionData['editType'] == 'E':
-                return editElement(functionData['DB'], functionData['T'], functionData['E'], functionData['D'])
+                return json.dumps({"id": id, "returning": editElement(functionData['DB'], functionData['T'], functionData['E'], functionData['D'])})
         elif functionType == 'GET':
             if functionData['getType'] == 'E':
-                return getElement(functionData['DB'], functionData['T'], functionData['E'])
+                return json.dumps({"id": id, "returning": getElement(functionData['DB'], functionData['T'], functionData['E'])})
             elif functionData['getType'] == 'EAll':
-                return getAllElements(functionData['DB'], functionData['T'])
+                return json.dumps({"id": id, "returning": getAllElements(functionData['DB'], functionData['T'])})
             elif functionData['getType'] == 'EQuery':
-                return getAllElementsThat(functionData['DB'], functionData['T'], functionData['Q'])
+                return json.dumps({"id": id, "returning": getAllElementsThat(functionData['DB'], functionData['T'], functionData['Q'])})
 
 def keepAliveThread():
     while True:
@@ -317,7 +318,7 @@ def startUp():
     @sio.on('dataRequest')
     def dataRequest(data):
         returner = executeData(json.loads(data))
-        sio.emit('sendingBack', returner)
+        sio.emit('dataReturn', returner)
 
     thread = returningThread(target=keepAliveThread, args=())
     thread.start()
